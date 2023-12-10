@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brrrgrrr - Custom Burger Builder</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome CDN -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <style>
+    /* Animation */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate__animated {
+      animation-duration: 1s;
+      animation-fill-mode: both;
+    }
+    .animate__fadeInUp {
+      animation-name: fadeInUp;
+    }
+
+    body {
+      background-image: url("burgerbg.png");
+      background-repeat: no-repeat;
+      background-size: cover;
+      font-family: 'Helvetica', Verdana, sans-serif;
+      color: #333;
+    }
+
+    h1,h4, h5, h6 {
+      color: beige;
+      text-align: center;
+    }
+
+    h1,h2,h3{
+      color: brown;
+      text-align: center;
+    }
+
+    #burgerBuilder {
+      background-color: beige;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      margin: 50px auto;
+      max-width: 600px;
+    }
+
+    #ingredientsList {
+      margin-top: 30px;
+    }
+
+    .ingredient-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+
+    .ingredient-item {
+      flex-basis: calc(50% - 10px);
+      margin-bottom: 20px;
+    }
+
+    .ingredient-label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #198754;
+    }
+
+    .form-check-input:checked {
+      background-color: #198754;
+      border-color: #198754;
+    }
+
+    .form-check-label {
+      color: #333;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+    }
+
+    .ingredient-icon {
+      font-size: 30px;
+      margin-right: 10px;
+      color: rgb(37, 32, 43); 
+    }
+
+
+    #createBurger {
+      background-color: #198754;
+      border-color: #198754;
+      font-weight: bold;
+    }
+
+    #selectedBurger {
+      margin-top: 30px;
+    }
+
+    .alert-success {
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+      color: #155724;
+      text-align: center;
+      padding: 20px;
+      border-radius: 8px;
+      font-size: 18px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="burgerBuilder">
+      <div id="welcomeBox">
+        <h1>Welcome to Brrrgrrr</h1>
+        <p>Welcome! Get ready to create your delicious burger.</p>
+      </div>
+      <h2>Choose your Ingredients</h2>
+      <div id="ingredientsList" class="ingredient-group">
+        <!-- Ingredients with icons will be dynamically added here using JavaScript -->
+      </div>
+      <button id="createBurger" class="btn btn-primary mt-3">Create My Burger</button>
+      <button id="cancelOrder" class="btn btn-danger mt-3 ms-2">Cancel Order</button>
+
+      <div id="selectedBurger" class="mt-4 d-none">
+        <div class="alert alert-success animate__animated animate__fadeInUp" role="alert">
+          <h3>Your Chosen Burger:</h3>
+          <p id="burgerIngredients"></p>
+          <p id="totalCost"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JavaScript and dependencies -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const ingredientPrices = {
+      'Bun': 1.50,
+      'Patty': 3.00,
+      'Cheese': 1.00,
+      'Lettuce': 0.50,
+      'Tomato': 0.75,
+      'Onion': 0.50,
+      'Pickles': 0.75,
+      'Sauce': 0.50
+    };
+
+    // DOM Manipulation
+    const ingredientsList = document.getElementById('ingredientsList');
+    const createBurgerButton = document.getElementById('createBurger');
+    const cancelOrderButton = document.getElementById('cancelOrder');
+    const burgerIngredientsDisplay = document.getElementById('burgerIngredients');
+    const totalCostDisplay = document.getElementById('totalCost');
+    const selectedBurgerDiv = document.getElementById('selectedBurger');
+
+    // Function to display ingredients with icons
+    function displayIngredients() {
+      for (const ingredient in ingredientPrices) {
+        const icon = getIngredientIcon(ingredient);
+        
+        const ingredientDiv = document.createElement('div');
+        ingredientDiv.classList.add('form-check', 'form-switch', 'ingredient-item');
+        
+        const inputSwitch = document.createElement('input');
+        inputSwitch.classList.add('form-check-input');
+        inputSwitch.type = 'checkbox';
+        inputSwitch.id = ingredient.replace('_', ' ');
+        
+        const labelSwitch = document.createElement('label');
+        labelSwitch.classList.add('form-check-label', 'ingredient-label');
+        labelSwitch.htmlFor = ingredient.replace('_', ' ');
+        labelSwitch.innerHTML = `${icon} ${ingredient}`;
+        
+        ingredientDiv.appendChild(inputSwitch);
+        ingredientDiv.appendChild(labelSwitch);
+        
+        ingredientsList.appendChild(ingredientDiv);
+        
+        inputSwitch.addEventListener('change', () => {
+          updateBurger();
+        });
+      }
+    }
+
+    // Function to get Font Awesome icon for each ingredient
+    function getIngredientIcon(ingredient) {
+      switch (ingredient) {
+        case 'Bun':
+          return '<i class="fas fa-bread-slice ingredient-icon"></i>';
+        case 'Patty':
+          return '<i class="fas fa-hamburger ingredient-icon"></i>';
+        case 'Cheese':
+          return '<i class="fas fa-cheese ingredient-icon"></i>';
+        case 'Lettuce':
+          return '<i class="fas fa-leaf ingredient-icon"></i>';
+        case 'Tomato':
+          return '<i class="fas fa-circle ingredient-icon"></i>';
+        case 'Onion':
+          return '<i class="fas fa-circle ingredient-icon"></i>';
+        case 'Pickles':
+          return '<i class="fas fa-pepper-hot ingredient-icon"></i>';
+        case 'Sauce':
+          return '<i class="fas fa-pepper-hot ingredient-icon"></i>';
+        default:
+          return '';
+      }
+    }
+
+    // Update the burger ingredients and total cost
+    function updateBurger() {
+      const selectedIngredients = [];
+      let totalCost = 0;
+      
+      ingredientsList.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        const ingredient = checkbox.id.replace(' ', '_');
+        if (checkbox.checked) {
+          selectedIngredients.push(checkbox.id);
+          totalCost += ingredientPrices[ingredient];
+        }
+      });
+      
+      burgerIngredientsDisplay.textContent = `Ingredients : ${selectedIngredients.join(', ')}`;
+      totalCostDisplay.textContent = `Total Cost : $${totalCost.toFixed(2)}`;
+    }
+
+    // Event listener for Create Burger button
+    createBurgerButton.addEventListener('click', () => {
+      updateBurger();
+      selectedBurgerDiv.classList.remove('d-none');
+      document.body.style.overflow = 'hidden'; 
+    });
+
+    // Event listener for Cancel Order button
+    cancelOrderButton.addEventListener('click', () => {
+      const checkboxes = ingredientsList.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+      });
+      selectedBurgerDiv.classList.add('d-none');
+      burgerIngredientsDisplay.textContent = '';
+      totalCostDisplay.textContent = '';
+      document.body.style.overflow = ''; 
+    });
+
+    displayIngredients();
+  </script>
+
+</body>
+</html>
